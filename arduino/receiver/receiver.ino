@@ -1,6 +1,7 @@
 #include <RH_ASK.h>
 #include <SPI.h>
-#include "utils/message.h"
+#include <message.h>
+
 // Create Amplitude Shift Keying Object
 RH_ASK rf_driver;
 
@@ -15,12 +16,9 @@ void setup()
     }
 }
 
-bool validate(Message *msg) 
-{
-  return msg.senderID
-}
-
 uint8_t prevResendID = 0;
+
+Payload payload = { binary: 0 };
 
 void loop()
 {
@@ -29,9 +27,8 @@ void loop()
     uint8_t buflen = sizeof(buf);
     // Check if received packet is correct size
     if (rf_driver.recv(buf, &buflen)) {
-      Payload payload;
-      msg.binary = buf;
-      if(validate(&(payload.msg))) {
+      payload.binary = buf;
+      if(validate(&payload)) {
           if(payload.msg.resendID != prevResendID) {
               // Print values to Serial Monitor
               Serial.print("id=");

@@ -4,13 +4,12 @@
 #include <RH_ASK.h>
 #include <SPI.h>
 
-#include "utils/message.h"
+#include <message.h>
 
 #define DEVICE_ID 1
 #define DHTPIN 2       // DHT-22 Output Pin connection
 
-Payload payload;
-payload.msg.id = DEVICE_ID;
+Payload payload = { msg: { senderID: DEVICE_ID, resendID: 0, reserved: 0, message: 0}};
 
 // Create Amplitude Shift Keying Object
 RH_ASK rf_driver;
@@ -33,7 +32,7 @@ void setup() {
 #define MAX_RESEND 5
 
 inline char humidity_percentage(int raw_value) {
-    return ((raw_value - SOIL_METER_MIN) * 100) / (SOIL_METER_MAX - SOIL_METER_MIN)
+    return ((raw_value - SOIL_METER_MIN) * 100) / (SOIL_METER_MAX - SOIL_METER_MIN);
 }
 
 void loop()
@@ -46,7 +45,7 @@ void loop()
 #ifdef DEBUG
     Serial.println("Sending value: %d", (int)hum);
 #endif
-    payload.msg.resendID = 0
+    payload.msg.resendID = 0;
     do {
         rf_driver.send(payload.binary, sizeof(payload.binary));
         rf_driver.waitPacketSent();

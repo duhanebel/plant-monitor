@@ -17,8 +17,8 @@ void debug_printBits(size_t const size, void const * const ptr)
     printf("\n");
 }
 
-int validate(Message *msg) {
-    return (msg->senderID >= 0 && msg->senderID <= 15) &&
-           (msg->resendID >=0 && msg->resendID <= 7) &&
-           (msg->message >= 0 && msg->message <= 255);
+int validate(Payload *payload) {
+    return (payload->msg.senderID >= 0 && payload->msg.senderID <= 15) &&
+           (payload->msg.resendID >=0 && payload->msg.resendID <= 7) &&
+           (payload->msg.message >= 0 && payload->msg.message <= 255);
 }

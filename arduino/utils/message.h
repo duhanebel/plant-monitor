@@ -1,3 +1,6 @@
+#ifndef MESSAGE_H_INCLUDED
+#define MESSAGE_H_INCLUDED
+
 typedef struct _message {
 	unsigned char senderID: 4;
 	unsigned char resendID: 3;
@@ -14,4 +17,6 @@ typedef union _payload {
 void debug_printBits(size_t const size, void const * const ptr);
 #endif
 
-int validate(Message *msg);
+int validate(Payload *payload);
+
+#endif
