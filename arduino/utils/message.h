@@ -2,21 +2,25 @@
 #define MESSAGE_H_INCLUDED
 
 typedef struct _message {
-	unsigned char senderID: 4;
-	unsigned char resendID: 3;
-	unsigned char reserved: 1;
-	unsigned char message: 8;
+	uint8_t senderID: 4;
+	uint8_t resendID: 3;
+	uint8_t reserved: 1;
+	uint16_t message: 16;
 } Message;
 
 typedef union _payload {
 	Message msg;
-	char *binary;
+	uint8_t binary[3];
 } Payload;
 
-#ifdef DEBUG
-void debug_printBits(size_t const size, void const * const ptr);
-#endif
+typedef enum _msgtype {
+  MSG_LO = 0,
+  MSG_HI
+} MsgType;
 
 int validate(Payload *payload);
+void setMsg(Payload *payload, MsgType type, uint8_t value);
+uint8_t readMsg(Payload *payload, MsgType type);
 
 #endif
+

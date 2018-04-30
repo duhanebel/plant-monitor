@@ -1,24 +1,34 @@
 #include <stdio.h>
 #include "message.h"
 
-void debug_printBits(size_t const size, void const * const ptr)
-{
-    unsigned char *b = (unsigned char*) ptr;
-    unsigned char byte;
-    int i, j;
+#define LOW_VALUE_MASK 0x00ff
+#define HIGH_VALUE_MASK 0xff00
 
-    for (i=size-1;i>=0;i--) {
-        for (j=7;j>=0;j--) {
-          byte = (b[i] >> j) & 1;
-          printf("%u", byte);
-        }
-        printf(" ");
-    }
-    printf("\n");
-}
 
 int validate(Payload *payload) {
-    return (payload->msg.senderID >= 0 && payload->msg.senderID <= 15) &&
-           (payload->msg.resendID >=0 && payload->msg.resendID <= 7) &&
-           (payload->msg.message >= 0 && payload->msg.message <= 255);
+    return (payload->msg.senderID >= 0 && payload->msg.senderID < 16) &&
+           (payload->msg.resendID >=0 && payload->msg.resendID < 8) &&
+           (payload->msg.message >= 0 && payload->msg.message < 65536);
 }
+
+void setMsg(Payload *payload, MsgType type, uint8_t value)
+{
+  switch(type) {
+    case MSG_LO:
+      payload->msg.message &= ~LOW_VALUE_MASK;
+      payload->msg.message |= value;
+      break;
+    case MSG_HI:
+      payload->msg.message &= ~HIGH_VALUE_MASK;
+      payload->msg.message |= (value << 8);
+      break;
+  }
+}
+
+
+uint8_t readMsg(Payload *payload, MsgType type)
+{
+    return (type == MSG_LO)? (payload->msg.message & LOW_VALUE_MASK) : (payload->msg.message >> 8);
+}
+
+
