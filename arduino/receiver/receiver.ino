@@ -16,8 +16,7 @@ void setup()
     }
 }
 
-uint8_t prevResendID = 0;
-
+uint8_t prevResendIDs[MAX_IDS] = {0};
 Payload payload;// = { binary: 0 };
 
 void loop()
@@ -30,7 +29,7 @@ void loop()
       memcpy(payload.binary, buf, sizeof(payload.binary));
 
       if(validate(&payload)) {
-          if(payload.msg.resendID != prevResendID) {
+          if(payload.msg.resendID != prevResendIDs[payload.msg.senderID]) {
  #ifdef DEBUG
               Serial.println(payload.binary[0], BIN);
               Serial.println(payload.binary[1], BIN);
@@ -51,7 +50,7 @@ void loop()
               Serial.print(";batt=");
               Serial.println(batt);
 
-              prevResendID = payload.msg.resendID;
+              prevResendIDs[payload.msg.senderID] = payload.msg.resendID;
           }
       }
 #ifdef DEBUG
