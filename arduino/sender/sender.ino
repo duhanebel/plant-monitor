@@ -1,136 +1,151 @@
-
 #include <RH_ASK.h>
-#include <SPI.h>
-
 #include <LowPower.h>
 #include <Vcc.h>
 
 #include <message.h>
 
-#define DEVICE_ID 2
+// Number of sensors for this sender - each sensor counts as a separate device ID
+#define SENSORS_COUNT 2
 
-Payload payload = { msg: { senderID: DEVICE_ID, resendID: 0, reserved: 0, message: 0}};
+// Device IDs of each sensor
+uint8_t device_IDs[SENSORS_COUNT] = { 3, 4 };
 
-// Create Amplitude Shift Keying Object
-RH_ASK rf_driver(2000, 12, 11);
-
-// Initialize DHT sensor for normal 16mhz Arduino
-
-void setup() {
-    // Initialize ASK Object
-    rf_driver.init();
-    // Start DHT Sensor
-
-    Serial.begin(9600);
-    randomSeed(analogRead(2));
-}
-
+// Minimum value of soil moisture (to calculate persentage)
 #define SOIL_METER_MIN 27
+
+// Max value of soil moisture (to calculate percentage)
 #define SOIL_METER_MAX 152
 
-#define SOIL_READ_PIN A0
-#define SOIL_POWER_PIN 2
+// Pins connected to the soil moisture probe
+uint8_t sensor_data_pins[SENSORS_COUNT] = { A0, A1 };
 
+// Pin to turn on the power to the rf-radio
+#define RF_POWER_PIN  9
+
+// Pin to send rf-radio data
+#define RF_DATA_PIN 12
+
+// Pins to turn on the power to sensors
+uint8_t sensor_power_pins[SENSORS_COUNT] = { 4, 5 };
+
+// Amount of resend for the same measurement (to mitigate concurrency between senders)
 #define MAX_RESEND 3
-#define DEBUG 
-int readSoil()
-{
-    digitalWrite(SOIL_POWER_PIN, HIGH);
-    delay(10);//wait 10 milliseconds 
-    int val = analogRead(SOIL_READ_PIN);//Read the SIG value form sensor 
-    digitalWrite(SOIL_POWER_PIN, LOW);//turn D7 "Off"
 
-    return val;//send current moisture value
+// Seconds to wait between readings - in seconds (the system will go to deep sleep during the wait)
+#define INTERVAL_BETWEEN_READINGS 5 //(5*60)
 
-}
+// Uncomment to get some debug printed to serial
+#define DEBUG
 
-volatile bool  adcDone;
-ISR(ADC_vect) { adcDone = true; }
+/////////////////////////////////////
+// END CONF
 
-static byte readVcc (byte count =4) {
-  
-  ADMUX = bit(REFS0) | 14; // use VCC and internal bandgap
-  bitSet(ADCSRA, ADIE);
-  while (count-- > 0) {
-    adcDone = false;
-    while (!adcDone)
-      delay(15);
-  }
-  bitClear(ADCSRA, ADIE);  
-  // convert ADC readings to fit in one byte, i.e. 20 mV steps:
-  //  1.0V = 0, 1.8V = 40, 3.3V = 115, 5.0V = 200, 6.0V = 250
-  return (55U * 1023U) / (ADC + 1) - 50;
-}
+// Structure to send to the receiver
+Payload payload = { msg: { senderID: 0, resendID: 0, reserved: 0, message: 0}};
 
-inline char humidity_percentage(int raw_value) {
-    if (raw_value < SOIL_METER_MIN ) return raw_value;
-    else return map(raw_value, SOIL_METER_MAX, SOIL_METER_MIN, 0, 100);
-}
+// Create Amplitude Shift Keying Object
+RH_ASK rf_driver(2000, // speed
+                 11,   // rxPin (not in use)
+                 RF_DATA_PIN);  // txPin
 
+// Vcc reference value
 Vcc vcc(1);
-#define LOW_VALUE_MASK 0x00ff
-#define HIGH_VALUE_MASK 0xff00
-void setMsg_(Payload *payload, MsgType type, uint8_t value)
+
+void setup() {
+    rf_driver.init();
+    pinMode(RF_POWER_PIN, OUTPUT);
+    pinMode(RF_DATA_PIN, OUTPUT);
+
+    for(int sensor=0;sensor<SENSORS_COUNT;++sensor) {
+      pinMode(sensor_power_pins[sensor], OUTPUT);
+    }
+
+    randomSeed(analogRead(2));
+    
+#ifdef DEBUG
+    Serial.begin(9600);
+    Serial.println("Debug mode: on");
+#endif
+}
+
+int readSoil(uint8_t sensor)
 {
-  Serial.print("Setting: "); Serial.println(value);
-  switch(type) {
-    case MSG_LO:
-      Serial.print("L1 "); Serial.print(payload->binary[1], BIN); Serial.print(" "); Serial.println(payload->binary[2], BIN);
-      payload->msg.message &= ~LOW_VALUE_MASK;
-      Serial.print("L2 "); Serial.print(payload->binary[1], BIN); Serial.print(" "); Serial.println(payload->binary[2], BIN);
-      payload->msg.message |= value;
-      Serial.print("L3 "); Serial.print(payload->binary[1], BIN); Serial.print(" "); Serial.println(payload->binary[2], BIN);
-      break;
-    case MSG_HI:
-      Serial.print("H1 "); Serial.print(payload->binary[1], BIN); Serial.print(" "); Serial.println(payload->binary[2], BIN);
-      payload->msg.message &= ~HIGH_VALUE_MASK;
-      Serial.print("H2 "); Serial.print(payload->binary[1], BIN); Serial.print(" "); Serial.println(payload->binary[2], BIN);
-      payload->msg.message |= (value << 8);
-      Serial.print("H3 "); Serial.print(payload->binary[1], BIN); Serial.print(" "); Serial.println(payload->binary[2], BIN);
-      break;
+    int val = analogRead(sensor);
+    return val;
+}
+
+int activateSensors(uint8_t sensor, bool active) {
+  if(active) {
+    digitalWrite(sensor, HIGH);
+    delay(100);
+  } else {
+    digitalWrite(sensor, LOW);
   }
+}
+
+//inline char humidity_percentage(int raw_value) {
+//    if (raw_value < SOIL_METER_MIN ) return raw_value;
+//    else return map(raw_value, SOIL_METER_MAX, SOIL_METER_MIN, 0, 100);
+//}
+
+void sendData(uint8_t sensorID, uint8_t humidity, uint8_t battery, uint8_t retries = MAX_RESEND) {
+    payload.msg.senderID = sensorID;
+
+    setMsg(&payload, MSG_LO, humidity);
+    setMsg(&payload, MSG_HI, battery);
+
+    activateSensors(RF_POWER_PIN, true);
+    for(int i=0;i<retries;++i) {
+        rf_driver.send(payload.binary, sizeof(payload.binary));
+        rf_driver.waitPacketSent();
+
+        delay(random(5, 100));
+
+#ifdef DEBUG
+        Serial.print("ID: "); Serial.print(payload.msg.senderID); 
+        Serial.print(" Sending value: "); Serial.print(readMsg(payload.msg.message, MSG_LO)); Serial.print(" - "); Serial.print(readMsg(payload.msg.message, MSG_HI));
+        Serial.print(" - count: "); Serial.println(payload.msg.resendID);
+        Serial.print("Raw payload: ");Serial.print(payload.binary[0], BIN); Serial.print(" "); Serial.print(payload.binary[1], BIN); Serial.print(" "); Serial.println(payload.binary[2], BIN);
+#endif
+    }  
+    payload.msg.resendID++;
+    activateSensors(RF_POWER_PIN, false);
+}
+
+void sleepFor(uint8_t seconds) {
+    uint8_t sleeping_counter = 0;
+    int sleep_intervals = seconds / SLEEP_8S;
+
+    while(sleeping_counter++ <= sleep_intervals) {
+        LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
+    }
+    sleeping_counter = 0;
 }
 
 void loop()
 {
 
-    int hum = readSoil();  // Get Humidity value
-    //Serial.print(hum);
-    //payload.msg.message = constrain(hum, 0, 255); //humidity_percentage(hum);
-    setMsg_(&payload, MSG_LO, constrain(hum, 0, 255));
     int batt = (int)vcc.Read_Perc(.2, 3.0);
-    setMsg_(&payload, MSG_HI, constrain(batt, 0, 255));
+    uint8_t batt8 = constrain(batt, 0, 255);
 
-    Serial.print("Batt: ");
-    Serial.println(batt);
-    Serial.print("Hum: ");
-    Serial.println(hum);
-    for(int i=0;i<MAX_RESEND;++i) {
+    for(uint8_t sensor=0;sensor<SENSORS_COUNT;++sensor) {
+        uint8_t analog_pin = sensor_data_pins[sensor];
+        uint8_t power_pin = sensor_power_pins[sensor];
+        uint8_t sensorID = device_IDs[sensor];
+
+        activateSensors(power_pin, true);
+        int hum = readSoil(analog_pin);
+        activateSensors(power_pin, false);
+
+        uint8_t hum8 = constrain(hum, 0, 255);
+
+        sendData(sensorID, hum8, batt8);
+
 #ifdef DEBUG
-
-        Serial.print("Sending value: ");
-        Serial.print(payload.msg.message);
-
-        Serial.print(" - count: ");
-        Serial.println(payload.msg.resendID);
-        Serial.print(payload.binary[0], BIN);
-        Serial.print(" ");
-        Serial.print(payload.binary[1], BIN);
-        Serial.print(" ");
-        Serial.println(payload.binary[2], BIN);
-
+        Serial.print("Batt: "); Serial.println(batt);
+        Serial.print("Hum: "); Serial.println(hum);
 #endif
-        digitalWrite(SOIL_POWER_PIN, HIGH);
-        delay(10);//wait 10 milliseconds 
-        rf_driver.send(payload.binary, sizeof(payload.binary));
-        rf_driver.waitPacketSent();
-        digitalWrite(SOIL_POWER_PIN, LOW);//turn D7 "Off"
-        
-        delay(random(5, 100));
-    } 
-    payload.msg.resendID++;
-    LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
-
+    }
+    
+    sleepFor(INTERVAL_BETWEEN_READINGS);
 }
-
-

@@ -1,4 +1,5 @@
 import serial
+from datetime import datetime
 from influxdb import InfluxDBClient
 from influxdb import SeriesHelper
 
@@ -67,7 +68,8 @@ class PlantSeries(SeriesHelper):
 
 while True:
     ser_bytes = ser.readline()
-    print("Received {}".format(ser_bytes))
+    time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print("[{}] Received {}".format(time, ser_bytes))
 
     measurement = measurement_from_data(ser_bytes)
     if measurement == None:

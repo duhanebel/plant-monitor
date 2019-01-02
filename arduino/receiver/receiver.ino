@@ -2,18 +2,36 @@
 #include <SPI.h>
 #include <message.h>
 
+// Pin to receive rf-radio data
+#define RF_DATA_PIN 11
+
+#define MAX_IDS 32
+
+//#define DEBUG
+
 // Create Amplitude Shift Keying Object
-RH_ASK rf_driver;
+RH_ASK rf_driver(2000, // speed
+                 RF_DATA_PIN,   // rxPin 
+                 12);  // txPin (not in use)
 
 void setup()
 {
     // Initialize ASK Object
-    rf_driver.init();
+    
     // Setup Serial Monitor
     Serial.begin(9600);
     while (!Serial) {
         ; // wait for serial port to connect
     }
+
+    if(!rf_driver.init()) {
+      Serial.println("RF init failed");
+    }
+  
+#ifdef DEBUG
+    Serial.println("Debug mode: on");
+#endif
+
 }
 
 uint8_t prevResendIDs[MAX_IDS] = {0};
@@ -52,6 +70,11 @@ void loop()
 
               prevResendIDs[payload.msg.senderID] = payload.msg.resendID;
           }
+#ifdef DEBUG
+            else {
+              Serial.println("Discarded same-resendID message");
+            }
+#endif
       }
 #ifdef DEBUG
        else {
