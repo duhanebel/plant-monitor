@@ -1,0 +1,11 @@
+{
+    "terminal.integrated.env.osx": {
+        "PATH": "/Users/fabiogallonetto/.platformio/penv/bin:/Users/fabiogallonetto/.platformio/penv:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/Applications/VMware:/Users/fabiogallonetto/.yadr/bin:/Users/fabiogallonetto/.yadr/bin/yadr",
+        "PLATFORMIO_CALLER": "vscode"
+    },
+    "files.associations": {
+        "eeprom_config.h": "c",
+        "stdio.h": "c",
+        "stdlib.h": "c"
+    }
+}
