@@ -1,10 +1,30 @@
 CC=gcc
-CFLAGS=-I../lib/eeprom_config
-DEPS = ../lib/eeprom_config/eeprom_config.h
+CFLAGS=-c -Wall -I../lib/eeprom_config
+EXECUTABLE=eeconfgen
 
-%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+src = $(wildcard *.c)
+obj = $(src:.c=.o)
+dep = $(obj:.o=.d)  # one dependency file for each source
 
-build: main.o eeprom_config.o
-	$(CC) -o eeconfgen main.o eeprom_config.o
-	
+all: clean cleandep $(EXECUTABLE)
+
+$(EXECUTABLE): $(obj) libeeconfig
+	$(CC) -o $@ $^ 
+
+-include $(dep)   # include all dep files in the makefile
+
+# rule to generate a dep file by using the C preprocessor
+# (see man cpp for details on the -MM and -MT options)
+%.d: %.c
+	@$(CC) $(CFLAGS) $< -MM -MT $(@:.d=.o) >$@
+
+libeeconfig: 
+	$(CC) -c -x c ../lib/eeprom_config/eeprom_config.cpp -o libeeconfig
+
+.PHONY: clean
+clean
+	rm -f $(obj) $(EXECUTABLE)
+
+.PHONY: cleandep
+cleandep:
+	rm -f $(dep)

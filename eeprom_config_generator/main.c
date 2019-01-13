@@ -172,7 +172,8 @@ int main(int argc, char **argv) {
   } else if (mode == MODE_WRITE) {
     result = write_to(file_path);
   } else {
-    fprintf(stderr, "%s: invalid program mode!\n", argv[0]);
+    fprintf(stderr, "%s: invalid option\n", argv[0]);
+    fprintf(stderr, "Try `%s --help' for more information.\n", argv[0]);
     result = -255;
   }
 
