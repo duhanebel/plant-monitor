@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-c -Wall -I../lib/eeprom_config
+CFLAGS=-c -Wall -I../../lib/eeprom_config
 EXECUTABLE=eeconfgen
 
 src = $(wildcard *.c)
@@ -19,11 +19,11 @@ $(EXECUTABLE): $(obj) libeeconfig
 	@$(CC) $(CFLAGS) $< -MM -MT $(@:.d=.o) >$@
 
 libeeconfig: 
-	$(CC) -c -x c ../lib/eeprom_config/eeprom_config.cpp -o libeeconfig
+	$(CC) -c -x c ../../lib/eeprom_config/eeprom_config.cpp -o libeeconfig
 
 .PHONY: clean
-clean
-	rm -f $(obj) $(EXECUTABLE)
+clean:
+	rm -f $(obj) $(EXECUTABLE) libeeconfig
 
 .PHONY: cleandep
 cleandep:

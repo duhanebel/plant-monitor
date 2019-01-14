@@ -7,3 +7,6 @@ arduino/.vscode/*
 !arduino/.vscode/tasks.json
 !arduino/.vscode/launch.json
 !arduino/.vscode/extensions.json
+
+*.o
+*.d

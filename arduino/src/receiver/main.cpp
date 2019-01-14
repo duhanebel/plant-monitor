@@ -9,70 +9,65 @@
 
 #define MAX_IDS 32
 
-//#define DEBUG
+#define DEBUG
 
 // Create Amplitude Shift Keying Object
-RH_ASK rf_driver(2000, // speed
-                 RF_DATA_PIN,   // rxPin 
-                 12);  // txPin (not in use)
+RH_ASK rf_driver(2000,        // speed
+                 RF_DATA_PIN, // rxPin
+                 12);         // txPin (not in use)
 
-void setup()
-{
-    // Initialize ASK Object
-    
-    // Setup Serial Monitor
-    Serial.begin(9600);
-    while (!Serial); // wait for serial port to connect
+void setup() {
+  // Initialize ASK Object
+
+  // Setup Serial Monitor
+  Serial.begin(9600);
+  while (!Serial)
+    ; // wait for serial port to connect
 
 #ifdef DEBUG
-    Log.begin(LOG_LEVEL_VERBOSE, &Serial);
-    Log.verbose("Debug mode: on");
-else
-    Log.begin(LOG_LEVE_ERROR, &Serial);
+  Log.begin(LOG_LEVEL_VERBOSE, &Serial);
+  Log.verbose("Debug mode: on");
+#else
+  Log.begin(LOG_LEVE_ERROR, &Serial);
 #endif
 
-    if(!rf_driver.init()) {
-      Log.fatal("RF init failed" CR);
-    }
+  if (!rf_driver.init()) {
+    Log.fatal("RF init failed" CR);
+  }
 }
 
-uint8_t prevResendIDs[MAX_IDS] = {0};
-Payload payload;// = { binary: 0 };
+uint8_t prevResendIDs[MAX_IDS] = {255};
+Message msg;
 
-void dumpPacketToSerial(Print *serial, Payload *payload) 
-{
-    uint8_t sender = payload->message.senderID;
-    uint8_t hum = payload->message.data[0];
-    uint8_t batt = payload->message.data[1];
-
-    // Print values to Serial Monitor
-    serial->print("id="); serial->print(sender);
-    serial->print(";hum="); serial->print(hum);
-    serial->print(";batt="); serial->println(batt);
+void dumpPacketToSerial(Print *serial, uint8_t senderID, Message *msg) {
+  serial->print("id=");
+  serial->print(senderID);
+  serial->print(";hum=");
+  serial->print(msg->value);
+  serial->print(";batt=");
+  serial->println(msg->battery);
 }
 
-void loop()
-{
-    // Set buffer to size of expected message
-    uint8_t buf[3];
-    uint8_t buflen = sizeof(buf);
-    // Check if received packet is correct size
-    if (rf_driver.recv(buf, &buflen)) {
-        memcpy(payload.binary, buf, sizeof(payload.binary));
+void loop() {
+  // Set buffer to size of expected message
+  uint8_t buf[sizeof(Message)];
+  uint8_t buflen = sizeof(buf);
 
-        if(!payload_validate(&payload)) return;
+  if (rf_driver.recv(buf, &buflen)) {
+    if (buflen != sizeof(Message)) {
+      Log.verbose("Wrong size message received (should be: %d but is %d",
+                  sizeof(Message), buflen);
+      return;
+    }
+    memcpy(&msg, buf, sizeof(Message));
+    uint8_t senderID = rf_driver.headerFrom();
+    uint8_t resendID = rf_driver.headerId();
 
-        if(payload.message.resendID != prevResendIDs[payload.message.senderID]) {
-            Log.verbose("Received payload: %B, %B, %B" CR, payload.binary[0], payload.binary[1], payload.binary[2]);
-            dumpPacketToSerial(&Serial, &payload);
-            prevResendIDs[payload.message.senderID] = payload.message.resendID;
-        }
-        else {
-            Log.verbose("Discarded same-resendID message" CR);
-        }
+    if (prevResendIDs[senderID] != resendID) {
+      prevResendIDs[senderID] = resendID;
+      dumpPacketToSerial(&Serial, senderID, &msg);
+    } else {
+      Log.verbose("Discarded same-resendID message (%d)" CR, resendID);
     }
-    else {
-        Log.verbose("Invalid payload received!" CR);
-    }
-    
+  }
 }
