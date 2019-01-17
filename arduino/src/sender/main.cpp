@@ -40,7 +40,7 @@
 // sleep during the wait) #define INTERVAL_BETWEEN_READINGS (5*60)
 
 // Uncomment to get some debug printed to serial
-#define DEBUG
+//#define DEBUG
 
 /////////////////////////////////////
 // END CONF
@@ -134,6 +134,11 @@ void sendData(uint8_t sensorID, uint8_t humidity, uint8_t battery,
   // activateSensors(RF_POWER_PIN, false);
 }
 
+uint8_t reduce_value(int val, int min, int max) {
+  int capped_val = constrain(val, min, max);
+  return map(capped_val, min, max, 0, 255);
+}
+
 void sleepFor(uint8_t seconds) {
   uint8_t sleeping_counter = 0;
   int sleep_intervals = seconds / 8;
@@ -156,9 +161,8 @@ void loop() {
     delay(200);
     int hum = analogRead(analog_pin);
     activateSensors(power_pin, false);
-
     uint8_t hum8 =
-        map(hum, config->min_soil_value, config->max_soil_value, 0, 254);
+        reduce_value(hum, config->min_soil_value, config->max_soil_value);
 
     sendData(sensorID, hum8, batt, config->max_resends);
 

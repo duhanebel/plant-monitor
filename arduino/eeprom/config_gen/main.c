@@ -61,8 +61,8 @@ int write_to(char *file_path) {
   config->max_resends = read_int("Max resends? ", 3);
   config->rf_power_pin = read_int("RF power pin? ", 9);
   config->rf_data_pin = read_int("RF data pin? ", 10);
-  config->min_soil_value = read_int("Min humidity value? ", 836);
-  config->max_soil_value = read_int("Max humidity value? ", 512);
+  config->min_soil_value = read_int("Min humidity value? ", 846);
+  config->max_soil_value = read_int("Max humidity value? ", 506);
   for (int i = 0; i < sensor_count; ++i) {
     char question[100];
     sprintf(question, "[SENSOR %d] Sensor ID? ", i + 1);

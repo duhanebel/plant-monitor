@@ -9,7 +9,7 @@
 
 #define MAX_IDS 32
 
-#define DEBUG
+// #define DEBUG
 
 // Create Amplitude Shift Keying Object
 RH_ASK rf_driver(2000,        // speed
@@ -28,7 +28,7 @@ void setup() {
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
   Log.verbose("Debug mode: on");
 #else
-  Log.begin(LOG_LEVE_ERROR, &Serial);
+  Log.begin(LOG_LEVEL_ERROR, &Serial);
 #endif
 
   if (!rf_driver.init()) {

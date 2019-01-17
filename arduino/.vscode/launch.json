@@ -12,7 +12,7 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug",
-            "executable": "/Users/fabiogallonetto/Documents/PlatformIO/Projects/plants_monitor/arduino/.pioenvs/receiver/firmware.elf",
+            "executable": "/Users/fabiogallonetto/Development/Arduino/plants_monitor/arduino/.pioenvs/receiver/firmware.elf",
             "toolchainBinDir": "/Users/fabiogallonetto/.platformio/packages/toolchain-atmelavr/bin",
             "preLaunchTask": {
                 "type": "PlatformIO",
@@ -24,7 +24,7 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (skip Pre-Debug)",
-            "executable": "/Users/fabiogallonetto/Documents/PlatformIO/Projects/plants_monitor/arduino/.pioenvs/receiver/firmware.elf",
+            "executable": "/Users/fabiogallonetto/Development/Arduino/plants_monitor/arduino/.pioenvs/receiver/firmware.elf",
             "toolchainBinDir": "/Users/fabiogallonetto/.platformio/packages/toolchain-atmelavr/bin",
             "internalConsoleOptions": "openOnSessionStart"
         }
