@@ -177,6 +177,75 @@ The code is found under `arduino/src/receiver`. The main file contains a bunch o
 if you followed a different wiring from the one in the example above.
 
 # Collector
+The collector is a Python script running (optionally) in a Docker container. The script listen to a serial port and uploads the data to
+influx DB.
 
+## Run the collector manually
+To run the script make sure you have python3 installed then install the dependencies with:
 
+```bash
+cd arduino/arduino_service
+pip3 install -r requirements.txt
+```
 
+When that's done run the server with:
+
+```bash
+./arduino_monitor.py -s [serial port] -i [influxDB IP] -p [influxDB port] -u [database username] -p [database password] -b [database name]
+```
+
+You can get a comprehensive list of options with: `./arduino_monitor.py -h`
+
+## Run the collector in Docker
+First build the docker image with:
+
+```bash
+cd arduino/arduino_service
+docker build . -t plants_monitor
+```
+
+The image requires the following environment variable to be set:
+
+| Variable    | Description                                 |
+|-------------|---------------------------------------------|
+| SERIAL_PORT | The serial port the arduino is connected to |
+| DB_ADDRESS  | The IP address of the InfluxDB instance     |
+| DB_PORT     | The port of the InfluxDB instance           |
+| DB_NAME     | The name of the DB                          |
+| DB_USERNAME | The username to access InfluxDB             |
+| DB_PASSWORD | The password to access InfluxDB             |
+
+After that just run the docker container making sure to forward all the env variables and access to the serial port.
+For example:
+
+```bash
+docker run -d \
+           --name plants_monitor_instance \
+           --device=/dev/ttyUSB0 \
+           -e DB_ADDRESS=localhost \
+           -e DB_PORT=8443 \
+           -e DB_NAME=plants \
+           -e SERIAL_PORT=/dev/ttyUSB0 \
+           -e DB_USERNAME=root \
+           -e DB_PASSWORD=mypassword \
+            plants_monitor
+```
+
+## InfluxDB
+Influx DB doesn't require much configuration. You'll need to: 
+
+- Create an user
+- Create an empty DB
+
+Everything can be managed via HTTP so, once the user is created, you can use the following:
+
+```bash
+curl -i -XPOST http://[influxDB IP]:[port]/query --data-urlencode "q=CREATE DATABASE [db_name]"
+```
+
+## Grafana
+Setting up Grafana to work with InfluxDB is straighforward and you can read more about it 
+[here](http://docs.grafana.org/features/datasources/influxdb/).
+
+# License
+MIT, See [LICENSE](LICENSE) file.
