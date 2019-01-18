@@ -56,16 +56,36 @@ Here's a sample wiring diagram for an Arduino that supports two sensors:
 The file `sender_monitor_schema.fzz` contains the design of a PCB that will make the wiring easier. To open the file you'll need a software called [Fritzing](http://fritzing.org/home/).
 In order to print the PCB I found the service at [https://aisler.net](https://aisler.net) one of the best in terms of speed/price in Europe (2 weeks and ~4EUR per board).
 
+The PCB looks like this:
+![example pcb](docs_images/custom_pcb.png)
+
+The pins labeled S1-S7 are to be connected to the soil sensors in this order:
+`[Data pin] [Ground pin] [VCC pin]`
+
+The pins labeled RDs are to be connected to the radio unit in the same order as the soil ones:
+`[Data pin] [Ground pin] [VCC pin]`
+
+The triplet connectors on the right are connected to the following arduino pins:
+
+| Triplet | Power switching | Data |
+|---------|-----------------|------|
+| S1      | D2              | A0   |
+| S2      | D3              | A1   |
+| S3      | D4              | A2   |
+| S4      | D5              | A3   |
+| S5      | D6              | A4   |
+| S6      | D7              | A5   |
+| S7      | D8              | A6   |
+| RDs     | D9              | D10  |
+
+
 The PCB is very simple and after you solder the arduino on one side and the ULN2803A on the other you're basically good to go.
-Here's some images of the soldering process:
+Here's some images of the pcb before the soldering (this configuration supports one sensor):
 
 ![example pcb](docs_images/soldering_front.png)
 ![example pcb](docs_images/soldering_back.png)
 
-
-////////////////////////////////////
-TODO IMAGES
-///////////////////////////////////////
+The battery needs to be connected to any of the 3.3v pin and to any of the GND pins on the top of the board.
 
 ### Tweaking the Pro Mini to reduce power consumption
 The Pro mini is a bare bone arduino that has a very low power consumption. In order to make it even more efficient
