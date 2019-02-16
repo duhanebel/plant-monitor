@@ -44,7 +44,6 @@
 
 /////////////////////////////////////
 // END CONF
-
 // Structure to send to the receiver
 Message msg;
 
@@ -135,7 +134,12 @@ void sendData(uint8_t sensorID, uint8_t humidity, uint8_t battery,
 }
 
 uint8_t reduce_value(int val, int min, int max) {
-  int capped_val = constrain(val, min, max);
+  // Log.verbose("val: %d" CR, val);
+  int c_min = min < max ? min : max;
+  int c_max = min < max ? max : min;
+  int capped_val = constrain(val, c_min, c_max);
+  // Log.verbose("capped_val: %d min: %d, max: %d" CR, capped_val, min, max);
+  // Log.verbose("final: %d" CR, map(capped_val, min, max, 0, 255));
   return map(capped_val, min, max, 0, 255);
 }
 
@@ -146,7 +150,6 @@ void sleepFor(uint8_t seconds) {
   while (sleeping_counter++ <= sleep_intervals) {
     LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
   }
-  sleeping_counter = 0;
 }
 
 void loop() {
