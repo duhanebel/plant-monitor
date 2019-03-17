@@ -5,3 +5,6 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 config_home
+arduino/eeprom/config_gen/*.hex
+arduino/eeprom/config_gen/eeconfgen
+arduino/eeprom/config_gen/libeeconfig

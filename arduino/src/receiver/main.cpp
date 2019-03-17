@@ -9,7 +9,7 @@
 
 #define MAX_IDS 32
 
-// #define DEBUG
+#define DEBUG
 
 // Create Amplitude Shift Keying Object
 RH_ASK rf_driver(2000,        // speed
@@ -67,7 +67,8 @@ void loop() {
       prevResendIDs[senderID] = resendID;
       dumpPacketToSerial(&Serial, senderID, &msg);
     } else {
-      Log.verbose("Discarded same-resendID message (%d)" CR, resendID);
+      Log.verbose("Discarded same-resendID message (%d) from: %d" CR, resendID,
+                  senderID);
     }
   }
 }

@@ -2,42 +2,13 @@
 
 #include <ArduinoLog.h>
 #include <LowPower.h>
+
 #include <RH_ASK.h>
 #include <Vcc.h>
 
 #include <EEPROM.h>
 #include <eeprom_config.h>
 #include <message.h>
-
-// // Number of sensors for this sender - each sensor counts as a separate
-// device ID #define SENSORS_COUNT 2
-
-// // Device IDs of each sensor
-// uint8_t device_IDs[SENSORS_COUNT] = { 3, 4 };
-
-// // Minimum value of soil moisture (to calculate persentage)
-// #define SOIL_METER_DRY 0
-
-// // Max value of soil moisture (to calculate percentage)
-// #define SOIL_METER_WET 1024
-
-// // Pins connected to the soil moisture probe
-// uint8_t sensor_data_pins[SENSORS_COUNT] = { A0, A1 };
-
-// // Pin to turn on the power to the rf-radio
-// #define RF_POWER_PIN  4
-
-// // Pin to send rf-radio data
-// #define RF_DATA_PIN 12
-
-// // Pins to turn on the power to sensors
-// uint8_t sensor_power_pins[SENSORS_COUNT] = { 4, 5 };
-
-// // Amount of resend for the same measurement (to mitigate concurrency between
-// senders) #define MAX_RESEND 3
-
-// // Seconds to wait between readings - in seconds (the system will go to deep
-// sleep during the wait) #define INTERVAL_BETWEEN_READINGS (5*60)
 
 // Uncomment to get some debug printed to serial
 //#define DEBUG
@@ -74,16 +45,16 @@ bool load_config_from_EEPROM(Config **config) {
 }
 
 void setup() {
-#ifdef DEBUG
+#if defined(DEBUG)
   Serial.begin(9600);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
   Log.verbose("Debug mode: on" CR);
 #endif
 
   if (!load_config_from_EEPROM(&config)) {
-    Log.fatal("Invalid EEPROM config" CR);
+    // Log.fatal("Invalid EEPROM config" CR);
   } else {
-#ifdef DEBUG
+#if defined(DEBUG)
     config_print(&Serial, config);
 #endif
   }
@@ -114,23 +85,20 @@ void sendData(uint8_t sensorID, uint8_t humidity, uint8_t battery,
   msg.battery = battery;
   msg.value = humidity;
 
-  // activateSensors(RF_POWER_PIN, true);
-  delay(100);
   rf_driver.setThisAddress(sensorID);
   rf_driver.setHeaderFrom(sensorID);
   rf_driver.setHeaderId(resendID++);
   for (int i = 0; i < retries; ++i) {
-
+#if defined(DEBUG)
     Log.verbose("ID: %d" CR, sensorID);
     Log.verbose(" Sending value: %d - %d" CR, msg.battery, msg.value);
     Log.verbose(" - count: %d" CR, resendID);
-
+#endif
     rf_driver.send((uint8_t *)&msg, sizeof(Message));
     rf_driver.waitPacketSent();
 
-    delay(random(5, 100));
+    delay(random(5, 50));
   }
-  // activateSensors(RF_POWER_PIN, false);
 }
 
 uint8_t reduce_value(int val, int min, int max) {
@@ -138,8 +106,10 @@ uint8_t reduce_value(int val, int min, int max) {
   int c_min = min < max ? min : max;
   int c_max = min < max ? max : min;
   int capped_val = constrain(val, c_min, c_max);
-  // Log.verbose("capped_val: %d min: %d, max: %d" CR, capped_val, min, max);
-  // Log.verbose("final: %d" CR, map(capped_val, min, max, 0, 255));
+#if defined(DEBUG)
+  Log.verbose("capped_val: %d min: %d, max: %d" CR, capped_val, min, max);
+  Log.verbose("final: %d" CR, map(capped_val, min, max, 0, 255));
+#endif
   return map(capped_val, min, max, 0, 255);
 }
 
@@ -169,8 +139,10 @@ void loop() {
 
     sendData(sensorID, hum8, batt, config->max_resends);
 
+#if defined(DEBUG)
     Log.verbose("Battery value: %d" CR, batt);
     Log.verbose("Humidity: %d" CR, hum);
+#endif
   }
 #ifdef DEBUG
   sleepFor(5);
