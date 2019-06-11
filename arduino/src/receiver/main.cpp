@@ -4,17 +4,76 @@
 
 #include <ArduinoLog.h>
 
+#if defined(ESP8266)
+
+#include <ESP8266HTTPClient.h>
+#include <ESP8266WiFi.h>
+#include <InfluxDb.h>
+// Wi-Fi settings
+const char *ssid = "dune.iot";
+const char *password = "4YFtCDoaHguiQtkmyypWjKcFt44gBnV)>>opojbj";
+
+// Sensor settings
+const uint8_t sensor_address = 0x76;
+
+// Corlysis Setting - click to the database to get those info
+#define INFLUXDB_HOST "nas.dune.uk"
+#define INFLUXDB_PORT 8086
+#define INFLUXDB_DATABASE "plants"
+#define INFLUXDB_USER "root"
+#define INFLUXDB_PASS "root"
+
+HTTPClient http;
+
+#endif
+
 // Pin to receive rf-radio data
-#define RF_DATA_PIN 11
+#define RF_DATA_PIN 12
 
 #define MAX_IDS 32
 
 #define DEBUG
 
 // Create Amplitude Shift Keying Object
-RH_ASK rf_driver(2000,        // speed
-                 RF_DATA_PIN, // rxPin
-                 12);         // txPin (not in use)
+RH_ASK rf_driver(2000,             // speed
+                 RF_DATA_PIN,      // rxPin
+                 RF_DATA_PIN + 1); // txPin (not in use)
+
+#if defined(ESP8266)
+void connect_wifi() {
+  // Wi-Fi connection
+  Serial.print("Connecting to the: ");
+  Serial.println(ssid);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(100);
+    Serial.print(".");
+  }
+
+  Serial.println();
+  Serial.println("WiFi connected.");
+  Serial.print("My IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+Influxdb influx(INFLUXDB_HOST, INFLUXDB_PORT);
+
+void connect_to_influxdb() {
+  influx.setDbAuth(INFLUXDB_DATABASE, INFLUXDB_USER, INFLUXDB_PASS);
+}
+
+void send_packet_to_influxdb(uint8_t senderID, Message *msg) {
+  String series = "soil,plant=" + String(senderID) +
+                  " battery=" + String(msg->battery) + "i" +
+                  ",humidity=" + String(msg->value) + "i";
+  // write it into db
+  if (!influx.write(series)) {
+    Log.verbose("Error sending");
+  }
+}
+#endif
 
 void setup() {
   // Initialize ASK Object
@@ -23,6 +82,10 @@ void setup() {
   Serial.begin(9600);
   while (!Serial)
     ; // wait for serial port to connect
+#if defined(ESP8266)
+  connect_wifi();
+  connect_to_influxdb();
+#endif
 
 #ifdef DEBUG
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
@@ -66,6 +129,9 @@ void loop() {
     if (prevResendIDs[senderID] != resendID) {
       prevResendIDs[senderID] = resendID;
       dumpPacketToSerial(&Serial, senderID, &msg);
+#if defined(ESP8266)
+      send_packet_to_influxdb(senderID, &msg);
+#endif
     } else {
       Log.verbose("Discarded same-resendID message (%d) from: %d" CR, resendID,
                   senderID);
