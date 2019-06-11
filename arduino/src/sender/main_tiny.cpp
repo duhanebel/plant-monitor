@@ -36,7 +36,6 @@ bool load_config_from_EEPROM(Config **config) {
   for (int i = 0; i < config_sizeof(local_conf); ++i) {
     (*(((uint8_t *)local_conf) + i)) = EEPROM.read(i);
   }
-  local_conf->rf_power_pin = 0;
   *config = local_conf;
 
   return (config_validate(local_conf) == true);

@@ -17,7 +17,7 @@ class Measurement:
         self.battery = battery
 
 def measurement_from_data(data):
-    tokens = data.split(';')
+    tokens = data.decode().split(';')
     id = "999"
     humidity = 0
     battery = 0

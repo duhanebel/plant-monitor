@@ -67,7 +67,9 @@ int write_to(char *file_path) {
     char question[100];
     sprintf(question, "[SENSOR %d] Sensor ID? ", i + 1);
     config->sensors[i].ID = read_int(question, READ_INT_NO_DEFAULT);
-    sprintf(question, "[SENSOR %d] Sensor data pin? (A0 = 14, A1 = 15, etc.) ",
+    sprintf(question,
+            "[SENSOR %d] Sensor data pin? (A0 = 14 (16 attiny), A1 = 15 (17 "
+            "attiny), etc.) ",
             i + 1);
     config->sensors[i].data_pin = read_int(question, READ_INT_NO_DEFAULT);
     sprintf(question, "[SENSOR %d] Sensor power pin? ", i + 1);

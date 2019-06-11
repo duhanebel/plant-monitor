@@ -11,7 +11,7 @@
 #include <message.h>
 
 // Uncomment to get some debug printed to serial
-//#define DEBUG
+#define DEBUG
 
 /////////////////////////////////////
 // END CONF
