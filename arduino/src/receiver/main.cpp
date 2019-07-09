@@ -30,9 +30,9 @@ HTTPClient http;
 // Pin to receive rf-radio data
 #define RF_DATA_PIN 12
 
-#define MAX_IDS 32
+#define MAX_IDS 128
 
-#define DEBUG
+//#define DEBUG
 
 // Create Amplitude Shift Keying Object
 RH_ASK rf_driver(2000,             // speed
@@ -112,6 +112,7 @@ void dumpPacketToSerial(Print *serial, uint8_t senderID, Message *msg) {
 }
 
 void loop() {
+
   // Set buffer to size of expected message
   uint8_t buf[sizeof(Message)];
   uint8_t buflen = sizeof(buf);

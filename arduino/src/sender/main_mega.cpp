@@ -11,7 +11,7 @@
 #include <message.h>
 
 // Uncomment to get some debug printed to serial
-#define DEBUG
+//#define DEBUG
 
 /////////////////////////////////////
 // END CONF
@@ -96,8 +96,8 @@ void sendData(uint8_t sensorID, uint8_t humidity, uint8_t battery,
 #endif
     rf_driver.send((uint8_t *)&msg, sizeof(Message));
     rf_driver.waitPacketSent();
-
-    delay(random(5, 50));
+    period_t sleep_time = (period_t)random(SLEEP_60MS, SLEEP_250MS);
+    LowPower.powerDown(sleep_time, ADC_OFF, BOD_OFF);
   }
 }
 
@@ -113,10 +113,9 @@ uint8_t reduce_value(int val, int min, int max) {
   return map(capped_val, min, max, 0, 255);
 }
 
-void sleepFor(uint8_t seconds) {
-  uint8_t sleeping_counter = 0;
-  int sleep_intervals = seconds / 8;
-
+void sleepFor(unsigned int seconds) {
+  unsigned int sleeping_counter = 0;
+  unsigned int sleep_intervals = seconds / 8;
   while (sleeping_counter++ <= sleep_intervals) {
     LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
   }
